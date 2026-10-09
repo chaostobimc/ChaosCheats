@@ -26,3 +26,19 @@ Zum Testen im Dev-Client: `./gradlew runClient`.
 ## Hinweise
 - GUI-Skalierung auf „Normal“ oder „Klein“ stellen, sonst ist das Fenster sehr eng.
 - Der Mod-Name steht in `src/main/resources/fabric.mod.json`, dort lässt sich alles anpassen.
+
+## Fehlerbehebung
+
+**„Cannot use connection to Gradle distribution … as it has been stopped“**
+Der Gradle-Daemon wurde beendet, meist durch zu wenig Speicher oder einen abgebrochenen Download.
+
+1. Gradle-Prozesse stoppen und Build im Terminal neu starten (nicht über die IDE-Synchronisation):
+   ```bash
+   ./gradlew --stop
+   ./gradlew build --refresh-dependencies --stacktrace
+   ```
+2. Falls der Fehler bleibt, die unvollständige Gradle-Distribution löschen und neu laden lassen:
+   - Linux/macOS: `rm -rf ~/.gradle/wrapper/dists/gradle-9.7.1-bin`
+   - Windows: den Ordner `%USERPROFILE%\.gradle\wrapper\dists\gradle-9.7.1-bin` löschen
+3. Java prüfen: `java -version` muss **21 oder neuer** zeigen. Sonst `JAVA_HOME` auf ein JDK 21 setzen.
+4. Speicher: `org.gradle.jvmargs` in `gradle.properties` steht auf `-Xmx2G`. Bei weniger RAM kann man den Wert anpassen.
