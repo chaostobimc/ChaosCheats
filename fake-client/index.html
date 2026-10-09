@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CHAOS // Client v4.7.2</title>
+<style>
+:root{
+  --accent:#a855f7;
+  --accent2:#22d3ee;
+  --on:#34d399;
+  --text:#e6e1f5;
+  --dim:#7d7896;
+  --line:rgba(168,85,247,.25);
+  --panel:rgba(14,12,24,.9);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"Segoe UI",Inter,system-ui,-apple-system,sans-serif;
+  background:#05040a;color:var(--text);overflow:hidden;user-select:none;
+}
+body::before{
+  content:"";position:fixed;inset:-20%;
+  background:
+    radial-gradient(circle at 20% 30%,rgba(168,85,247,.28),transparent 40%),
+    radial-gradient(circle at 80% 70%,rgba(34,211,238,.18),transparent 40%),
+    radial-gradient(circle at 50% 100%,rgba(236,72,153,.12),transparent 45%);
+  animation:drift 18s ease-in-out infinite alternate;
+  filter:blur(30px);
+}
+body.nopart::before{display:none}
+@keyframes drift{from{transform:translate(0,0) rotate(0deg)}to{transform:translate(-4%,3%) rotate(6deg)}}
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:rgba(168,85,247,.35);border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- Splash ---------- */
+#splash{
+  position:fixed;inset:0;z-index:100;background:#05040a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .6s ease;cursor:pointer;
+}
+#splash.gone{opacity:0;pointer-events:none}
+.splash-logo{
+  font-size:58px;font-weight:900;letter-spacing:10px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 22px rgba(168,85,247,.55));
+}
+.splash-sub{font-size:11px;letter-spacing:6px;color:var(--dim);margin-top:4px}
+.bar{width:440px;height:4px;background:#1c1830;border-radius:4px;overflow:hidden;margin:26px 0 14px}
+#bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease;box-shadow:0 0 12px var(--accent)}
+#bootlog{font-family:Consolas,monospace;font-size:12px;color:var(--dim);height:110px;width:440px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+#bootlog div{line-height:1.6}
+.skip{position:absolute;bottom:22px;font-size:11px;color:#4d4766}
+
+/* ---------- Window ---------- */
+#window{
+  position:fixed;inset:22px;display:grid;grid-template-rows:56px 1fr 150px;
+  border-radius:14px;background:var(--panel);
+  border:1px solid var(--line);
+  box-shadow:0 0 70px rgba(168,85,247,.25),inset 0 0 40px rgba(255,255,255,.02);
+  backdrop-filter:blur(14px);overflow:hidden;
+  transition:opacity .35s ease,transform .35s ease;
+}
+#window.hidden{opacity:0;transform:scale(.97);pointer-events:none}
+#window.nocon{grid-template-rows:56px 1fr 0}
+#window.nocon .console{display:none}
+
+header.top{
+  display:flex;align-items:center;gap:18px;padding:0 18px;
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(90deg,rgba(168,85,247,.2),transparent 55%);
+}
+.logo{font-weight:800;letter-spacing:2px;font-size:18px;white-space:nowrap}
+.logo .glyph{color:var(--accent2);margin-right:6px;text-shadow:0 0 10px var(--accent2)}
+.logo b{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.logo small{color:var(--dim);font-weight:400;letter-spacing:0;font-size:11px;margin-left:8px}
+.stats{margin-left:auto;display:flex;gap:16px;font-size:12px;color:var(--dim);font-family:Consolas,monospace}
+.stats b{color:var(--text);font-weight:600}
+.user{font-size:12px;color:var(--dim);white-space:nowrap}
+.user b{color:var(--text)}
+.avatar{display:inline-block;width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent2));vertical-align:middle;margin-right:6px}
+.winbtn{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--dim);cursor:pointer;font-size:16px;line-height:1}
+.winbtn:hover{color:#fff;border-color:var(--accent)}
+
+.body{display:grid;grid-template-columns:196px 1fr 300px;min-height:0}
+
+nav.cats{border-right:1px solid var(--line);padding:12px 8px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.cat{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;color:var(--dim);font-size:13.5px;transition:background .15s,color .15s}
+.cat .ico{width:18px;text-align:center}
+.cat:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.cat.active{background:linear-gradient(90deg,rgba(168,85,247,.38),rgba(168,85,247,.05));color:#fff;box-shadow:inset 3px 0 0 var(--accent)}
+.cat .cnt{margin-left:auto;font-size:10.5px;font-family:Consolas,monospace;opacity:.7}
+.cat-sep{height:1px;background:var(--line);margin:8px 6px;opacity:.6}
+
+.main{display:flex;flex-direction:column;min-height:0}
+.toolbar{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center}
+#search{
+  flex:1;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:8px;
+  padding:8px 12px;color:var(--text);outline:none;font-size:13px;user-select:text;
+  transition:border-color .2s,box-shadow .2s;
+}
+#search::placeholder{color:#55506b}
+#search:focus{border-color:var(--accent);box-shadow:0 0 12px rgba(168,85,247,.35)}
+.accents{display:flex;gap:6px}
+.swatch{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.15);transition:transform .15s}
+.swatch:hover{transform:scale(1.15)}
+.swatch.sel{border-color:#fff}
+
+.grid{
+  padding:14px 16px;overflow-y:auto;display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:10px;align-content:start;min-height:0;
+}
+.grid.single{grid-template-columns:1fr}
+.mod{
+  display:flex;gap:10px;align-items:center;justify-content:space-between;
+  padding:11px 12px;border-radius:10px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:all .15s ease;
+}
+.mod:hover{border-color:var(--line);background:rgba(168,85,247,.07)}
+.mod.sel{border-color:var(--accent);background:rgba(168,85,247,.1)}
+.mod.on{box-shadow:0 0 18px rgba(168,85,247,.2),inset 0 0 0 1px rgba(52,211,153,.22)}
+.mod-info{min-width:0}
+.mod-name{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mod.on .mod-name{color:#d8b4fe}
+.mod-desc{font-size:11px;color:var(--dim);margin-top:3px;line-height:1.35}
+.mod-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.key{
+  font-family:Consolas,monospace;font-size:10px;padding:2px 6px;min-width:22px;text-align:center;
+  border:1px solid var(--line);border-radius:4px;color:var(--dim);cursor:pointer;
+}
+.key:hover{color:#fff}
+.key.binding{color:#fff;border-color:var(--accent2);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.switch{width:34px;height:18px;border-radius:99px;background:#2a2539;position:relative;transition:background .2s;cursor:pointer}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#8a84a3;transition:all .2s}
+.mod.on .switch{background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 10px rgba(168,85,247,.5)}
+.mod.on .switch::after{left:18px;background:#fff}
+.empty{color:var(--dim);padding:30px;text-align:center;grid-column:1/-1}
+
+/* config + settings rows */
+.row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+}
+.row-title{font-weight:600;font-size:14px}
+.row-sub{font-size:11.5px;color:var(--dim);margin-top:3px}
+.btns{display:flex;gap:6px}
+.btn{
+  background:rgba(168,85,247,.18);border:1px solid var(--line);color:var(--text);
+  padding:6px 11px;border-radius:6px;cursor:pointer;font-size:12px;transition:background .15s;
+}
+.btn:hover{background:rgba(168,85,247,.38)}
+.btn.danger{background:rgba(244,63,94,.12);border-color:rgba(244,63,94,.35)}
+.btn.danger:hover{background:rgba(244,63,94,.3)}
+.section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin:6px 2px}
+
+aside.side{border-left:1px solid var(--line);padding:12px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;min-height:0}
+.card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px}
+.card h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);margin-bottom:8px;font-weight:600}
+#dName{font-size:17px;font-weight:700;background:linear-gradient(90deg,#fff,#c4b5fd);-webkit-background-clip:text;background-clip:text;color:transparent}
+#dDesc{font-size:12px;color:var(--dim);margin:6px 0 10px;line-height:1.45}
+.kb{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:8px}
+.setrow{margin:10px 0 4px;font-size:12px}
+.setrow label{display:flex;justify-content:space-between;color:var(--dim);margin-bottom:4px}
+.setrow span{color:var(--text);font-family:Consolas,monospace}
+.setrow input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+.chk{display:flex;gap:8px;align-items:center;font-size:12px;margin:8px 0;color:var(--dim);cursor:pointer}
+.chk input{accent-color:var(--accent);cursor:pointer}
+.radar canvas{display:block;width:100%;height:auto;border-radius:8px;background:rgba(0,0,0,.35)}
+.muted{color:var(--dim);font-size:12px}
+
+footer.console{
+  border-top:1px solid var(--line);background:rgba(0,0,0,.4);padding:8px 14px;
+  font-family:Consolas,monospace;font-size:11.5px;overflow-y:auto;color:#a9a3c4;
+  display:flex;flex-direction:column;
+}
+.ctitle{font-size:10.5px;letter-spacing:2px;color:var(--dim);margin-bottom:4px;text-transform:uppercase}
+#log{flex:1;overflow-y:auto}
+#log div{line-height:1.5}
+.ok{color:var(--on)}
+.warn{color:#fbbf24}
+.info{color:var(--accent2)}
+
+/* watermark + toasts */
+#wm{
+  position:fixed;top:8px;left:10px;z-index:40;font-family:Consolas,monospace;font-size:12px;
+  color:#fff;text-shadow:0 0 8px var(--accent);opacity:0;transition:opacity .3s;pointer-events:none;
+}
+#wm.show{opacity:.95}
+#toasts{position:fixed;right:44px;bottom:190px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;z-index:50;pointer-events:none}
+.toast{
+  background:rgba(16,14,26,.95);border:1px solid var(--line);border-left:3px solid var(--accent);
+  padding:10px 14px;border-radius:8px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.5);
+  animation:tin .3s ease,tout .4s ease 2.6s forwards;
+}
+@keyframes tin{from{opacity:0;transform:translateX(30px)}}
+@keyframes tout{to{opacity:0;transform:translateY(10px)}}
+</style>
+</head>
+<body>
+
+<!-- Splash -->
+<div id="splash">
+  <div class="splash-logo">CHAOS</div>
+  <div class="splash-sub">CLIENT · v4.7.2</div>
+  <div class="bar"><div id="bar"></div></div>
+  <div id="bootlog"></div>
+  <div class="skip">Klicken zum Überspringen</div>
+</div>
+
+<div id="wm">CHAOS CLIENT · 144 fps · 23 ms</div>
+<div id="toasts"></div>
+
+<!-- Main window -->
+<div id="window" class="hidden">
+  <header class="top">
+    <div class="logo"><span class="glyph">✶</span>CHAOS<b>CLIENT</b><small>v4.7.2 · build 2026.10</small></div>
+    <div class="stats">
+      <span>FPS <b id="fps">144</b></span>
+      <span>PING <b id="ping">23ms</b></span>
+      <span><b id="active">0</b> aktiv</span>
+    </div>
+    <div class="user"><span class="avatar"></span>Willkommen, <b>xX_Founder_Xx</b></div>
+    <button class="winbtn" id="btnClose" title="Ausblenden (INSERT)">×</button>
+  </header>
+
+  <div class="body">
+    <nav class="cats" id="cats"></nav>
+
+    <section class="main">
+      <div class="toolbar">
+        <input id="search" type="text" placeholder="Module durchsuchen...  (Strg+F)" autocomplete="off">
+        <div class="accents" id="accents"></div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+
+    <aside class="side">
+      <div class="card">
+        <h3>Ausgewähltes Modul</h3>
+        <div id="dName">Kein Modul gewählt</div>
+        <div id="dDesc">Klicke auf ein Modul, um die Einstellungen zu sehen.</div>
+        <div class="kb">Keybind: <span class="key" id="dKey" data-bind="1">-</span></div>
+      </div>
+      <div class="card" id="dSettings"></div>
+      <div class="card radar">
+        <h3>Radar</h3>
+        <canvas id="radar" width="260" height="200"></canvas>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="console">
+    <div class="ctitle">Konsole</div>
+    <div id="log"></div>
+  </footer>
+</div>
+
+<script>
+/* ============================================================
+   DATEN (rein kosmetisch)
+   ============================================================ */
+const CATS = [
+  {id:'combat',name:'Combat',icon:'⚔',list:`
+AimAssist Pro|Glättet deine Mausbewegung Richtung Ziel
+Triggerbot|Löst aus, sobald das Ziel im Fadenkreuz liegt
+Reach+|Erhöht die Trefferreichweite um einige Blöcke
+KillAura Lite|Rotiert automatisch zu Gegnern in der Nähe
+Velocity|Reduziert Rückstoß und Knockback spürbar
+AutoBlock|Blockt eingehende Treffer im richtigen Moment
+Backtrack|Verarbeitet Gegnerpositionen aus der Vergangenheit
+HitBox Expand|Vergrößert die Trefferfläche der Gegner
+Criticals|Erzwingt kritische Treffer beim Angriff
+Sword Combo|Verkettet Schwertangriffe ohne Verzögerung
+TargetStrafe|Umkreist das Ziel mit adaptiver Geschwindigkeit
+W-Tap Sprint|Setzt Sprint-Resets für mehr Schaden
+Antibot Filter|Ignoriert NPCs und Bot-Entitäten`},
+  {id:'movement',name:'Movement',icon:'➜',list:`
+Speed Strafe|Beschleunigt die Bewegung in der Luft
+Fly Glide|Gleitflug mit einstellbarer Höhe
+NoFall|Verhindert Fallschaden bei der Landung
+High Jump|Erhöht die Sprunghöhe
+Step Assist|Steigt Blöcke ohne Sprung hinauf
+Spider Walk|Klettert an Wänden empor
+Sprint Plus|Hält den Sprint dauerhaft aktiv
+Jesus Walk|Läuft über Wasser und Lava
+Blink Dash|Kurzer Sprung in Blickrichtung
+Phase Lite|Bewegt dich durch dünne Wände
+AutoWalk|Läuft automatisch geradeaus weiter
+Air Stuck|Friert deine Position in der Luft ein
+Long Jump|Maximiert die Weite deines Sprungs`},
+  {id:'visuals',name:'Visuals',icon:'◉',list:`
+ESP Boxes|Zeichnet Boxen um Spieler
+Chams Glow|Färbt Entitäten durch Wände
+Nametags+|Zeigt Namen, HP und Ausrüstung
+Tracers|Linien zu allen Zielen im Sichtfeld
+Fullbright|Macht die Welt jederzeit hell
+X-Ray Ores|Zeigt Erze durch den Untergrund
+Storage ESP|Markiert Truhen und Fässer
+Trajectories|Zeigt Flugbahnen von Projektilen
+Custom Crosshair|Eigenes Fadenkreuz mit Farbanpassung
+Zoom Scope|Stufenloser Zoom per Mausrad
+Motion Blur Off|Entfernt Bewegungsunschärfe
+Particle Remover|Blendet Partikeleffekte aus
+Freelook|Kamera löst sich vom Körper`},
+  {id:'player',name:'Player',icon:'☻',list:`
+AutoArmor|Rüstet automatisch die beste Rüstung an
+InvCleaner|Sortiert und räumt dein Inventar auf
+ChestStealer|Leert Truhen in Sekundenbruchteilen
+AutoTool|Wechselt automatisch das passende Werkzeug
+FastPlace|Entfernt Verzögerung beim Platzieren
+NoSlow|Keine Geschwindigkeitsreduktion beim Essen
+Inventory Move|Bewegen im offenen Inventar
+Auto Respawn|Respawnt sofort nach dem Tod
+Nuker Lite|Baut Blöcke im Radius ab
+Scaffold|Baut Brücken unter deine Füße
+Timer|Verändert die Spiel-Tickrate
+AutoClicker|Klickt, bis du es wieder ausschaltest
+Hotbar Sorter|Ordnet die Schnellleiste nach Typ`},
+  {id:'world',name:'World',icon:'◈',list:`
+Nuker|Entfernt Blöcke im Umkreis automatisch
+Fast Break|Reduziert die Abbauzeit drastisch
+Tree Chopper|Fällt ganze Bäume mit einem Schlag
+AutoFarm|Erntet reife Pflanzen automatisch
+Cave Finder|Markiert Höhlen auf der Karte
+Ore Scanner|Scannt Chunks nach Erzvorkommen
+Lava Bridge|Platziert Blöcke über Lava
+Auto Fish|Angelt und sammelt automatisch
+Auto Mine|Baut einen Schacht in Abwärtsrichtung
+Bed Finder|Zeigt Betten von Gegnern an
+Chunk Ghost|Lädt Chunks ohne Kollision
+Weather Control|Ändert Wetter und Tageszeit`},
+  {id:'exploits',name:'Exploits',icon:'☠',list:`
+Packet Spoof|Manipuliert ausgehende Pakete
+Desync|Trennt Client- und Server-Position
+Ghost Hand|Interagiert aus der Distanz
+Lag Switch|Friert die Verbindung kurzzeitig ein
+Fake Lag|Erzeugt künstliche Latenz
+Bypass Rev7|Umgeht Standard-Prüfungen
+Anticheat Bypass v3|Überlistet die Erkennung
+Chat Bypass|Umgeht Chatfilter mit Unicode
+Crash Proof|Verhindert Abstürze bei Fehlern
+Ban Shield|Verschleiert deine Client-Signatur
+Silent Teleport|Teleportiert ohne Bewegungsanzeige
+Mod Scanner Off|Deaktiviert Modul-Scans
+Packet Logger|Protokolliert alle Netzwerkpakete`},
+  {id:'render',name:'Render',icon:'✦',list:`
+Shader Core|Lädt den Shader-Stack neu
+Bloom|Weiches Leuchten für helle Flächen
+Vignette|Dunkle Ränder für mehr Atmosphäre
+Night Vision|Macht dunkle Bereiche sichtbar
+Blur HUD|Glasmorphismus für HUD-Elemente
+Watermark|Zeigt Client-Logo und FPS
+ArrayList|Aktive Module als Liste anzeigen
+Keystrokes|Zeigt gedrückte Tasten an
+Armor HUD|Zeigt den Rüstungsstatus an
+Coordinates|Blendet Koordinaten ein
+Potion HUD|Listet aktive Effekte auf
+Target HUD|Infos zum anvisierten Gegner
+Fog Remover|Entfernt Nebel komplett`},
+  {id:'scripts',name:'Scripts',icon:'❖',list:`
+Script Loader|Lädt externe Skripte im Sandbox-Modus
+Lua Runner|Führt Lua-Skripte im Hintergrund aus
+JS Macros|Eigene Makros in JavaScript
+Macro Recorder|Zeichnet Eingaben als Makro auf
+Chat Macros|Schnelle Nachrichten per Tastendruck
+Script Store|Durchsuche die Community-Skripte
+Auto Update|Aktualisiert Skripte automatisch
+Auto Macros|Startet Makros nach Zeitplan
+Macro Sharing|Teile Makros mit deinen Freunden`},
+  {id:'misc',name:'Misc',icon:'≡',list:`
+Discord RPC|Zeigt deinen Status auf Discord
+Auto Reconnect|Verbindet bei Abbruch neu
+Auto GG|Schreibt nach jedem Sieg eine Nachricht
+Name Protect|Verbirgt deinen Namen im Chat
+Anti AFK|Verhindert Kick durch Inaktivität
+Chat Filter|Blendet unerwünschte Nachrichten aus
+Auto Login|Speichert deine Anmeldung sicher
+Sound Mute|Stummschaltung bei bestimmten Ereignissen
+Screenshot Plus|Automatische Screenshots bei Kills
+Clock Overlay|Zeigt Uhrzeit und Session-Dauer`}
+];
+
+const SETTING_POOL = [
+  {l:'Reichweite',min:1,max:6,step:.1,u:' m'},
+  {l:'Verzögerung',min:0,max:500,step:5,u:' ms'},
+  {l:'Glättung',min:0,max:100,step:1,u:'%'},
+  {l:'FOV',min:10,max:180,step:1,u:'°'},
+  {l:'Intensität',min:0,max:10,step:.5,u:''}
+];
+const CHECK_POOL = ['Teams ignorieren','Nur sichtbare Ziele','Stealth-Modus','Zufallswerte','Tooltip anzeigen','Sound-Feedback'];
+const KEY_POOL = ['-','-','-','-','R','G','V','X','B','N','K','F','H','J','Z'];
+
+const CONFIGS = [
+  {name:'legit_v3',date:'vor 2 Tagen'},
+  {name:'rage_mode',date:'vor 5 Tagen'},
+  {name:'pvp_default',date:'vor 1 Woche'},
+  {name:'stream_safe',date:'vor 3 Wochen'},
+  {name:'clean_setup',date:'vor 1 Monat'},
+  {name:'tryhard_2026',date:'gestern'}
+];
+
+const ACCENTS = [
+  ['#a855f7','#22d3ee'],
+  ['#22d3ee','#34d399'],
+  ['#f43f5e','#f97316'],
+  ['#34d399','#22d3ee'],
+  ['#ec4899','#a855f7']
+];
+
+const SETTINGS_DEFS = [
+  ['watermark','Watermark anzeigen'],
+  ['toasts','Toast-Benachrichtigungen'],
+  ['rainbow','Rainbow-Akzent'],
+  ['console','Konsole anzeigen'],
+  ['particles','Hintergrund-Effekte'],
+  ['antiss','Anti-Screenshot-Schutz']
+];
+
+const LOGS = [
+  '[render] Frame-Cache neu aufgebaut (3.1 ms)',
+  '[net] Paketverlust 0.0% · stabil',
+  '[module] Registry synchronisiert (1.247 Einträge)',
+  '[sec] Integritätsprüfung bestanden',
+  '[cfg] Autosave abgeschlossen',
+  '[gfx] VRAM-Auslastung 41%',
+  '[net] Heartbeat empfangen · 23 ms',
+  '[input] Mausrate 1000 Hz erkannt',
+  '[thread] Worker #3 idle',
+  '[update] Keine neuen Updates verfügbar',
+  '[scan] Ressourcen-Scan übersprungen (manuell)'
+];
+
+const BOOT = [
+  ['Initialisiere CHAOS-Kern...',420],
+  ['Lade Modul-Register (1.247 Einträge)...',620],
+  ['Überprüfe Lizenz...',520],
+  ['Lizenz gültig · Founder Tier',300],
+  ['Starte Render-Pipeline...',480],
+  ['Synchronisiere Config "legit_v3"...',560],
+  ['Fertig. Willkommen, xX_Founder_Xx',520]
+];
+
+/* ============================================================
+   HILFSFUNKTIONEN
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const rand = (a,b) => a + Math.random()*(b-a);
+
+function hash(str){
+  let h = 2166136261;
+  for (const c of str){ h ^= c.charCodeAt(0); h = Math.imul(h,16777619); }
+  return h >>> 0;
+}
+function prng(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function fmt(s, v){
+  const val = (v ?? s.v);
+  return (s.step < 1 ? Number(val).toFixed(1) : Math.round(val)) + s.u;
+}
+
+/* ============================================================
+   MODULE GENERIEREN (deterministisch, damit alles gleich bleibt)
+   ============================================================ */
+const MODS = [];
+CATS.forEach(cat => {
+  cat.list.trim().split('\n').forEach(line => {
+    const [name, desc] = line.split('|').map(x => x.trim());
+    const r = prng(hash(name));
+    const pool = [...SETTING_POOL];
+    const n = 2 + Math.floor(r()*2);
+    const s = [];
+    for (let i = 0; i < n; i++){
+      const p = pool.splice(Math.floor(r()*pool.length), 1)[0];
+      const steps = Math.round((p.max - p.min) / p.step);
+      s.push({...p, v: p.min + Math.floor(r()*(steps+1)) * p.step});
+    }
+    const checks = CHECK_POOL.filter(() => r() < .3).slice(0,3).map(l => ({l, v: r() < .5}));
+    const key = KEY_POOL[Math.floor(r()*KEY_POOL.length)];
+    MODS.push({
+      id: cat.id + '-' + MODS.length,
+      cat: cat.id, name, desc,
+      on: r() < .22, key, s, checks
+    });
+  });
+});
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  cat: 'combat',
+  sel: null,
+  query: '',
+  binding: null,
+  accent: 0,
+  settings: {watermark:false, toasts:true, rainbow:false, console:true, particles:true, antiss:false}
+};
+
+/* ============================================================
+   LOG & TOASTS
+   ============================================================ */
+function sysLog(msg, cls=''){
+  const L = $('#log');
+  const d = document.createElement('div');
+  const t = new Date().toLocaleTimeString('de-DE');
+  d.innerHTML = `<span style="color:#5d5778">[${t}]</span> <span class="${cls}"></span>`;
+  d.querySelector('span:last-child').textContent = msg;
+  L.appendChild(d);
+  while (L.children.length > 160) L.firstChild.remove();
+  L.scrollTop = L.scrollHeight;
+}
+function toast(msg){
+  if (!state.settings.toasts) return;
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), 3100);
+}
+
+/* ============================================================
+   RENDERING
+   ============================================================ */
+const CAT_LIST = [
+  ...CATS.map(c => ({id:c.id, name:c.name, icon:c.icon})),
+  {id:'config', name:'Configs', icon:'💾'},
+  {id:'settings', name:'Settings', icon:'⚙'}
+];
+
+function renderCats(){
+  $('#cats').innerHTML = CAT_LIST.map((c, i) => {
+    const mods = MODS.filter(m => m.cat === c.id);
+    const act = mods.filter(m => m.on).length;
+    const sep = (c.id === 'config') ? '<div class="cat-sep"></div>' : '';
+    return sep + `<div class="cat ${state.cat===c.id?'active':''}" data-cat="${c.id}">
+      <span class="ico">${c.icon}</span>${c.name}
+      ${mods.length ? `<span class="cnt">${act}/${mods.length}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(m){
+  const cls = ['mod', m.on?'on':'', state.sel===m.id?'sel':''].join(' ');
+  const keyCls = 'key' + (state.binding===m.id ? ' binding' : '');
+  const keyTxt = state.binding===m.id ? '...' : m.key;
+  return `<div class="${cls}" data-id="${m.id}">
+    <div class="mod-info">
+      <div class="mod-name"></div>
+      <div class="mod-desc"></div>
+    </div>
+    <div class="mod-right">
+      <span class="${keyCls}" data-key="1">${keyTxt}</span>
+      <div class="switch" data-switch="1"></div>
+    </div>
+  </div>`;
+}
+
+function fillCard(el, m){
+  el.querySelector('.mod-name').textContent = m.name;
+  el.querySelector('.mod-desc').textContent = m.desc;
+}
+
+function renderGrid(){
+  const grid = $('#grid');
+  if (state.cat === 'config' && !state.query){ renderConfigs(); return; }
+  if (state.cat === 'settings' && !state.query){ renderSettings(); return; }
+
+  grid.className = 'grid';
+  let list;
+  if (state.query){
+    const q = state.query.toLowerCase();
+    list = MODS.filter(m => (m.name + ' ' + m.desc).toLowerCase().includes(q));
+  } else {
+    list = MODS.filter(m => m.cat === state.cat);
+  }
+  if (!list.length){
+    grid.innerHTML = '<div class="empty">Keine Module gefunden.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(cardHTML).join('');
+  grid.querySelectorAll('.mod').forEach((el, i) => fillCard(el, list[i]));
+}
+
+function updateCard(m){
+  if (!m) return;
+  const el = document.querySelector(`.mod[data-id="${m.id}"]`);
+  if (!el) return;
+  el.className = ['mod', m.on?'on':'', state.sel===m.id?'sel':''].join(' ');
+  const k = el.querySelector('.key');
+  k.className = 'key' + (state.binding===m.id ? ' binding' : '');
+  k.textContent = state.binding===m.id ? '...' : m.key;
+}
+
+function renderConfigs(){
+  const grid = $('#grid');
+  grid.className = 'grid single';
+  grid.innerHTML =
+    `<div class="section-title">Gespeicherte Configs</div>` +
+    CONFIGS.map(c => `
+      <div class="row">
+        <div>
+          <div class="row-title">${c.name}</div>
+          <div class="row-sub">Zuletzt geändert: ${c.date}</div>
+        </div>
+        <div class="btns">
+          <button class="btn" data-act="load" data-name="${c.name}">Laden</button>
+          <button class="btn" data-act="save" data-name="${c.name}">Speichern</button>
+          <button class="btn danger" data-act="del" data-name="${c.name}">Löschen</button>
+        </div>
+      </div>`).join('') +
+    `<div class="muted" style="margin-top:6px">Tipp: Configs teilen sich über den Community-Store.</div>`;
+}
+
+function renderSettings(){
+  const grid = $('#grid');
+  grid.className = 'grid single';
+  grid.innerHTML =
+    `<div class="section-title">Client-Einstellungen</div>` +
+    SETTINGS_DEFS.map(([key, label]) => `
+      <div class="row" data-setting="${key}" style="cursor:pointer">
+        <div>
+          <div class="row-title">${label}</div>
+          <div class="row-sub">${settingSub(key)}</div>
+        </div>
+        <div class="switch ${state.settings[key]?'on':''}" style="${state.settings[key]?'background:linear-gradient(90deg,var(--accent),var(--accent2))':''}"></div>
+      </div>`).join('') +
+    `<div class="section-title" style="margin-top:14px">Akzentfarbe</div>
+     <div class="row"><div class="accents" id="accentRow">${ACCENTS.map((a,i)=>
+        `<div class="swatch ${i===state.accent?'sel':''}" data-accent="${i}" style="background:linear-gradient(135deg,${a[0]},${a[1]})"></div>`).join('')}
+     </div></div>`;
+}
+function settingSub(key){
+  return {
+    watermark:'Zeigt das CHAOS-Logo oben links',
+    toasts:'Kleine Einblendungen bei Modul-Änderungen',
+    rainbow:'Animiert den Akzent durch den Farbkreis',
+    console:'Blendet die Konsole unten ein oder aus',
+    particles:'Animierte Hintergrund-Blobs',
+    antiss:'Versteckt das Fenster bei Screenshots'
+  }[key];
+}
+
+function renderDetails(){
+  const m = MODS.find(x => x.id === state.sel);
+  if (!m){
+    $('#dName').textContent = 'Kein Modul gewählt';
+    $('#dDesc').textContent = 'Klicke auf ein Modul, um die Einstellungen zu sehen.';
+    $('#dKey').textContent = '-';
+    $('#dSettings').innerHTML = '';
+    return;
+  }
+  $('#dName').textContent = m.name;
+  $('#dDesc').textContent = m.desc;
+  $('#dKey').textContent = m.key;
+  $('#dSettings').innerHTML =
+    `<h3>Einstellungen</h3>` +
+    m.s.map((s, i) => `
+      <div class="setrow">
+        <label>${s.l}<span data-val="${i}">${fmt(s)}</span></label>
+        <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.v}" data-si="${i}">
+      </div>`).join('') +
+    m.checks.map((c, i) => `
+      <label class="chk"><input type="checkbox" data-ci="${i}" ${c.v?'checked':''}>${c.l}</label>`).join('');
+}
+
+function renderActive(){
+  $('#active').textContent = MODS.filter(m => m.on).length;
+}
+
+function refreshAll(){
+  renderCats();
+  renderActive();
+}
+
+/* ============================================================
+   AKTIONEN
+   ============================================================ */
+function setCat(id){
+  state.cat = id;
+  state.query = '';
+  $('#search').value = '';
+  renderCats();
+  renderGrid();
+}
+
+function select(id){
+  const old = state.sel;
+  state.sel = id;
+  updateCard(MODS.find(x => x.id === old));
+  updateCard(MODS.find(x => x.id === id));
+  renderDetails();
+}
+
+function toggleMod(m){
+  m.on = !m.on;
+  sysLog(`${m.name} → ${m.on ? 'aktiviert' : 'deaktiviert'}`, m.on ? 'ok' : 'warn');
+  toast(`${m.name} ${m.on ? 'aktiviert' : 'deaktiviert'}`);
+  updateCard(m);
+  renderCats();
+  renderActive();
+}
+
+function startBind(m){
+  state.binding = m.id;
+  updateCard(m);
+  sysLog(`Warte auf Taste für ${m.name}...`, 'info');
+}
+
+function applyAccent(i){
+  state.accent = i;
+  const [a, b] = ACCENTS[i];
+  document.documentElement.style.setProperty('--accent', a);
+  document.documentElement.style.setProperty('--accent2', b);
+}
+
+let rbTimer = null;
+function setRainbow(on){
+  clearInterval(rbTimer);
+  if (on){
+    let h = 0;
+    rbTimer = setInterval(() => {
+      h = (h + 2) % 360;
+      document.documentElement.style.setProperty('--accent', `hsl(${h} 90% 65%)`);
+      document.documentElement.style.setProperty('--accent2', `hsl(${(h+120)%360} 90% 60%)`);
+    }, 60);
+  } else {
+    applyAccent(state.accent);
+  }
+}
+
+function applySettings(){
+  const s = state.settings;
+  $('#wm').classList.toggle('show', s.watermark);
+  $('#window').classList.toggle('nocon', !s.console);
+  document.body.classList.toggle('nopart', !s.particles);
+  setRainbow(s.rainbow);
+}
+
+function toggleSetting(key){
+  state.settings[key] = !state.settings[key];
+  const v = state.settings[key];
+  if (key === 'antiss') sysLog(`Screenshot-Schutz ${v ? 'aktiv' : 'inaktiv'}`, v ? 'ok' : 'warn');
+  applySettings();
+  renderSettings();
+  if (key !== 'toasts' || v) toast(`${SETTINGS_DEFS.find(d=>d[0]===key)[1]}: ${v ? 'an' : 'aus'}`);
+}
+
+function toggleWindow(){
+  $('#window').classList.toggle('hidden');
+}
+
+/* ============================================================
+   EVENTS
+   ============================================================ */
+$('#cats').addEventListener('click', e => {
+  const c = e.target.closest('[data-cat]');
+  if (c) setCat(c.dataset.cat);
+});
+
+$('#search').addEventListener('input', e => {
+  state.query = e.target.value.trim();
+  renderGrid();
+});
+
+$('#accents').innerHTML = ACCENTS.map((a,i) =>
+  `<div class="swatch ${i===state.accent?'sel':''}" data-accent="${i}" style="background:linear-gradient(135deg,${a[0]},${a[1]})"></div>`).join('');
+$('#accents').addEventListener('click', e => {
+  const s = e.target.closest('[data-accent]');
+  if (!s) return;
+  applyAccent(+s.dataset.accent);
+  document.querySelectorAll('#accents .swatch').forEach(x => x.classList.toggle('sel', +x.dataset.accent === state.accent));
+  if (state.cat === 'settings') renderSettings();
+  sysLog(`Akzentfarbe geändert (Preset ${state.accent+1})`, 'info');
+});
+
+$('#grid').addEventListener('click', e => {
+  const act = e.target.closest('[data-act]');
+  if (act){
+    const name = act.dataset.name;
+    if (act.dataset.act === 'load'){
+      const r = prng(hash(name));
+      MODS.forEach(m => m.on = r() < .35);
+      refreshAll();
+      renderDetails();
+      sysLog(`Config "${name}" geladen`, 'ok');
+      toast(`Config "${name}" geladen`);
+    } else if (act.dataset.act === 'save'){
+      sysLog(`Config "${name}" gespeichert`, 'ok');
+      toast(`Config "${name}" gespeichert`);
+    } else if (act.dataset.act === 'del'){
+      const i = CONFIGS.findIndex(c => c.name === name);
+      if (i >= 0) CONFIGS.splice(i, 1);
+      sysLog(`Config "${name}" gelöscht`, 'warn');
+      toast(`Config "${name}" gelöscht`);
+      renderConfigs();
+    }
+    return;
+  }
+
+  const setting = e.target.closest('[data-setting]');
+  if (setting){
+    toggleSetting(setting.dataset.setting);
+    return;
+  }
+
+  const sw = e.target.closest('[data-accent]');
+  if (sw) return;
+
+  const card = e.target.closest('.mod');
+  if (!card) return;
+  const m = MODS.find(x => x.id === card.dataset.id);
+  if (!m) return;
+
+  if (e.target.closest('[data-switch]')) toggleMod(m);
+  else if (e.target.closest('[data-key]')) startBind(m);
+  else select(m.id);
+});
+
+$('#dSettings').addEventListener('input', e => {
+  const m = MODS.find(x => x.id === state.sel);
+  if (!m) return;
+  if (e.target.dataset.si !== undefined){
+    const i = +e.target.dataset.si;
+    m.s[i].v = parseFloat(e.target.value);
+    document.querySelector(`[data-val="${i}"]`).textContent = fmt(m.s[i]);
+  }
+});
+$('#dSettings').addEventListener('change', e => {
+  const m = MODS.find(x => x.id === state.sel);
+  if (!m) return;
+  if (e.target.dataset.ci !== undefined){
+    const c = m.checks[+e.target.dataset.ci];
+    c.v = e.target.checked;
+    sysLog(`${m.name}: ${c.l} = ${c.v ? 'an' : 'aus'}`, c.v ? 'ok' : 'warn');
+  }
+});
+
+$('#dKey').addEventListener('click', () => {
+  const m = MODS.find(x => x.id === state.sel);
+  if (m) startBind(m);
+});
+
+$('#btnClose').addEventListener('click', () => {
+  $('#window').classList.add('hidden');
+  toast('Drücke INSERT zum Öffnen');
+});
+
+document.addEventListener('keydown', e => {
+  if (state.binding){
+    e.preventDefault();
+    const m = MODS.find(x => x.id === state.binding);
+    state.binding = null;
+    if (m){
+      m.key = e.key === 'Escape' ? '-' : (e.key.length === 1 ? e.key.toUpperCase() : e.key.slice(0,6));
+      updateCard(m);
+      renderDetails();
+      sysLog(`Keybind ${m.name} → ${m.key}`, 'info');
+    }
+    return;
+  }
+  if (e.key === 'Insert'){
+    e.preventDefault();
+    toggleWindow();
+    return;
+  }
+  if (e.ctrlKey && e.key.toLowerCase() === 'f'){
+    e.preventDefault();
+    $('#search').focus();
+    return;
+  }
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+  if (e.ctrlKey || e.altKey || e.metaKey) return;
+  const k = e.key.length === 1 ? e.key.toUpperCase() : null;
+  if (!k) return;
+  MODS.filter(m => m.key === k).forEach(toggleMod);
+});
+
+/* ============================================================
+   STATS, LOG-STREAM, RADAR
+   ============================================================ */
+setInterval(() => {
+  $('#fps').textContent = Math.round(rand(138, 168));
+  $('#ping').textContent = Math.round(rand(18, 31)) + 'ms';
+  $('#wm').textContent = `CHAOS CLIENT · ${$('#fps').textContent} fps · ${$('#ping').textContent}`;
+}, 1000);
+
+function streamLog(){
+  sysLog(LOGS[Math.floor(Math.random()*LOGS.length)]);
+  setTimeout(streamLog, rand(2200, 4200));
+}
+
+const radar = $('#radar');
+const rc = radar.getContext('2d');
+const dots = Array.from({length:16}, () => ({a: Math.random()*Math.PI*2, r: .2 + Math.random()*.8, sp: .002 + Math.random()*.004}));
+let sweep = 0;
+function drawRadar(){
+  const W = radar.width, H = radar.height;
+  const cx = W/2, cy = H/2, R = 88;
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a855f7';
+  const accent2 = getComputedStyle(document.documentElement).getPropertyValue('--accent2').trim() || '#22d3ee';
+
+  rc.clearRect(0,0,W,H);
+  rc.fillStyle = 'rgba(0,0,0,.35)';
+  rc.beginPath(); rc.arc(cx,cy,R,0,Math.PI*2); rc.fill();
+
+  rc.strokeStyle = 'rgba(168,85,247,.25)';
+  rc.lineWidth = 1;
+  [.33,.66,1].forEach(f => { rc.beginPath(); rc.arc(cx,cy,R*f,0,Math.PI*2); rc.stroke(); });
+  rc.beginPath(); rc.moveTo(cx-R,cy); rc.lineTo(cx+R,cy); rc.moveTo(cx,cy-R); rc.lineTo(cx,cy+R); rc.stroke();
+
+  sweep = (sweep + .025) % (Math.PI*2);
+  rc.save();
+  rc.globalAlpha = .22;
+  rc.fillStyle = accent;
+  rc.beginPath(); rc.moveTo(cx,cy); rc.arc(cx,cy,R,sweep-.7,sweep); rc.closePath(); rc.fill();
+  rc.restore();
+  rc.strokeStyle = accent;
+  rc.beginPath(); rc.moveTo(cx,cy); rc.lineTo(cx+Math.cos(sweep)*R, cy+Math.sin(sweep)*R); rc.stroke();
+
+  dots.forEach(d => {
+    d.a += d.sp;
+    const x = cx + Math.cos(d.a)*d.r*R, y = cy + Math.sin(d.a)*d.r*R;
+    let diff = ((sweep - d.a) % (Math.PI*2) + Math.PI*2) % (Math.PI*2);
+    const alpha = diff < 1 ? 1 - diff : .25;
+    rc.globalAlpha = alpha;
+    rc.fillStyle = accent2;
+    rc.beginPath(); rc.arc(x,y,3,0,Math.PI*2); rc.fill();
+  });
+  rc.globalAlpha = 1;
+  requestAnimationFrame(drawRadar);
+}
+
+/* ============================================================
+   BOOT / SPLASH
+   ============================================================ */
+let bi = 0, skipped = false, booted = false;
+const bootEl = $('#bootlog');
+const barEl = $('#bar');
+
+function nextBoot(){
+  if (skipped) return finishBoot();
+  if (bi >= BOOT.length){ setTimeout(finishBoot, 350); return; }
+  const [t, ms] = BOOT[bi];
+  const d = document.createElement('div');
+  d.textContent = '> ' + t;
+  bootEl.appendChild(d);
+  barEl.style.width = ((bi+1)/BOOT.length*100) + '%';
+  bi++;
+  setTimeout(nextBoot, ms);
+}
+
+function finishBoot(){
+  if (booted) return;
+  booted = true;
+  barEl.style.width = '100%';
+  $('#splash').classList.add('gone');
+  $('#window').classList.remove('hidden');
+  setTimeout(() => $('#splash').remove(), 700);
+  renderCats();
+  renderGrid();
+  renderDetails();
+  renderActive();
+  sysLog('CHAOS Client geladen', 'ok');
+  setTimeout(() => toast('Drücke INSERT zum Ein- und Ausblenden'), 600);
+}
+
+$('#splash').addEventListener('click', () => { skipped = true; });
+
+applyAccent(0);
+nextBoot();
+streamLog();
+drawRadar();
+</script>
+</body>
+</html>
