@@ -15,9 +15,12 @@ dependencies {
 }
 
 processResources {
-	inputs.property "version", project.version
+	// Version vor dem Closure in eine lokale Variable lesen,
+	// sonst scheitert der Configuration Cache am Zugriff auf "project".
+	def modVersion = project.version
+	inputs.property "version", modVersion
 	filesMatching("fabric.mod.json") {
-		expand "version": project.version
+		expand "version": modVersion
 	}
 }
 
