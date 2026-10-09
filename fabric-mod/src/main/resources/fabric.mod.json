@@ -1,0 +1,22 @@
+{
+	"schemaVersion": 1,
+	"id": "chaosfakeclient",
+	"version": "${version}",
+	"name": "CHAOS Client",
+	"description": "Client-GUI ohne Funktion. Nur Optik.",
+	"authors": [
+		"ChaosCheats"
+	],
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"de.chaos.fakeclient.ChaosFakeClient"
+		]
+	},
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}
