@@ -59,13 +59,13 @@ public final class ActiveModulesHud {
 		int accent2 = ChaosState.accent2();
 		int count = ChaosState.activeTotal();
 
-		int headerAlpha = count > 0 ? 1 : 0;
+		float headerAlpha = count > 0 ? 1f : 0f;
 		String head = "AKTIVE MODULE";
 		String headCount = String.valueOf(count);
 		int headX = sw - RIGHT - font.width(headCount) - 6 - font.width(head);
-		Ui.text(g, font, head, headX, TOP + 1, Ui.withAlpha(0xFF7D7896, headAlpha));
-		Ui.text(g, font, headCount, sw - RIGHT - font.width(headCount), TOP + 1, Ui.withAlpha(accent, headAlpha));
-		Ui.rect(g, sw - RIGHT - 80, TOP + HEADER_H, 80, 1, Ui.withAlpha(accent, 0.35f * headAlpha));
+		Ui.text(g, font, head, headX, TOP + 1, Ui.withAlpha(0xFF7D7896, headerAlpha));
+		Ui.text(g, font, headCount, sw - RIGHT - font.width(headCount), TOP + 1, Ui.withAlpha(accent, headerAlpha));
+		Ui.rect(g, sw - RIGHT - 80, TOP + HEADER_H, 80, 1, Ui.withAlpha(accent, 0.35f * headerAlpha));
 
 		int firstY = TOP + HEADER_H + 4;
 		int n = rows.size();
