@@ -1,10 +1,12 @@
 package de.chaos.fakeclient;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import de.chaos.fakeclient.gui.ActiveModulesHud;
 import de.chaos.fakeclient.gui.ChaosScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
@@ -33,5 +35,9 @@ public class ChaosFakeClient implements ClientModInitializer {
 				}
 			}
 		});
+
+		HudElementRegistry.addLast(
+				Identifier.fromNamespaceAndPath("chaosfakeclient", "active_modules"),
+				(context, tickCounter) -> ActiveModulesHud.render(context));
 	}
 }

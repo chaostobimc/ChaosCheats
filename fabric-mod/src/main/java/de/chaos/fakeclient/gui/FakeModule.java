@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
-/** Ein Modul der Fake-Liste. Hat nur Zustand, keinerlei Wirkung. */
+/** Ein Modul der Fake-Liste. Hat nur Zustand und Animationen, keinerlei Wirkung. */
 public final class FakeModule {
 
 	public static final class Slider {
@@ -48,10 +48,12 @@ public final class FakeModule {
 	public static final class Check {
 		public final String label;
 		public boolean value;
+		public final Anim anim = new Anim(0f);
 
 		Check(String label, boolean value) {
 			this.label = label;
 			this.value = value;
+			this.anim.snap(value ? 1f : 0f);
 		}
 	}
 
@@ -78,6 +80,11 @@ public final class FakeModule {
 	public final List<Slider> sliders = new ArrayList<>();
 	public final List<Check> checks = new ArrayList<>();
 
+	/** Animationen: Schalter, Hover-Glow und Einblendung in der HUD-Liste. */
+	public final Anim toggle = new Anim(0f);
+	public final Anim hover = new Anim(0f);
+	public final Anim hud = new Anim(0f);
+
 	public FakeModule(String category, String name, String desc) {
 		this.category = category;
 		this.name = name;
@@ -86,6 +93,9 @@ public final class FakeModule {
 		Random rnd = new Random((category + "|" + name).hashCode());
 		this.enabled = rnd.nextFloat() < 0.22f;
 		this.key = rnd.nextFloat() < 0.25f ? KEY_CODES[rnd.nextInt(KEY_CODES.length)] : 0;
+
+		toggle.snap(enabled ? 1f : 0f);
+		hud.snap(enabled ? 1f : 0f);
 
 		int[] order = {0, 1, 2, 3, 4};
 		for (int i = order.length - 1; i > 0; i--) {
